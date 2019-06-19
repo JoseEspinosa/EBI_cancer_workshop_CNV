@@ -543,13 +543,15 @@ The etimated polidy is 2.32 which means approximately a third of the genome is t
 ### CNV calling from segments
 The last step will determine the copy number by simply counting the total number of allele reported to the sample general ploidy.
 
-
+**WARNING: this is simplified, here we only have deletions and duplications, not 4, 5 copies,... Don't do it this way**
 ```{.R}
 CNA=rep(".",dim(ascat.output$segments)[1])
-CNA[rowSums(ascat.output$segments[,5:6]) > round(ascat.output$ploidy)]="DUP"
+# this is simplified, here we only have deletions duplications, not 4, 5 copies, don't do it this way
+CNA[rowSums(ascat.output$segments[,5:6]) > round(ascat.output$ploidy)]="DUP" 
 CNA[rowSums(ascat.output$segments[,5:6]) < round(ascat.output$ploidy)]="DEL"
 output.table=data.frame(ascat.output$segments,CNA=CNA)
 ```
+
 
 And we finally save the CNV results into a file
 
@@ -567,6 +569,44 @@ exit
 
 
 Explore the result files
+
+![tumor2.germline](img/tumor2.germline.png)
+
+*Note: It is kid of clean data, it does not seem to be contaminated. It is raw data that it is why we have so much variation.* 
+*LogR: Some drop in chr1*
+*BAF: It is a little be high the part of the heterozigous variants, but it is good because we have the two lines of homozigous and the one of heteroz.*
+
+![tumor2.tumour](img/tumor2.tumour.png)
+
+*Note: 
+chr1 two copies from LogR plot. And there are some variants that are homozigous, 0 and 100% and 50% for heterozigous, while in chromosome 2 it has different percetange of variants because there is the 3n. 
+chr3 deletion (logR)
+chr11 duplication and LOH of heterozigosity because of the BAF
+chr 12 amplification of the tumor
+chr2: seems to be weird*
+
+![tumor2.ASPCF](img/tumor2.ASPCF.png)
+
+*note: after the segmentation the data data looks betters is normalized.
+chr11, 3 copies, chr12 4 copies, you don't expect to have 0.5 BAF, something weird is happening on this chromosome. At the peak we even have a peak of 6 copies.
+chr3: Theres is a lost of a copy for the whole chr and there is a duplication with LOH because otherwise it will be more similar to chr2. But we will have the answer in following results.
+Lost of a copy at the beginning we should find 0 or 1 it could be purity, he is not sure.*
+
+*Note: sometimes you have very similar scores, both solutions very likely to be, they check what pathologist said and maybe they can take the one that has a little lower score if it fits better with the pathologist estimation.*
+
+*Purity, Ploidy results*
+
+```
+Sample	Aberrant_cell_fraction	Ploidy
+tumor2	0.53	2.32
+```
+
+*If we look at ASPCF now, are we 2n with lot of amplifications or 3n with a lot of deletions? We are diploid with some amplifications. In NGS we thought we were 3n because we were looking to a triploid region (we thought we were triploid with a lot of deletions). This is why is good to have both analyses to confirm each other and also to look to the whole genome and not only to a small region that could lead us to misleading results.*
+
+![tumor2.sunrise](img/tumor2.sunrise.png)
+
+*Note: *
+![tumor2.ASCATprofile](img/tumor2.ASCATprofile.png)
 
 **What are these results telling us ?** [solution](solutions/__ascat1.md)
 
