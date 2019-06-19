@@ -320,11 +320,14 @@ For a events of this size (several Mb), we should not be able to easily observe 
 
 Once IGV is open just load the normal et tumor bam files and zoom on the region `2:100000000-170000000`
 
-[region zoom](img/igv1.png)
+![region zoom](img/igv1.png)
 
 *If you click on top of the track you see the mean coverage of the region.*
 *The coverage is quite flat ~50X. Only we have some local peak and agujeros. In the tumor all the first strecth is flat. Then we have a drop down to ~40, back to ~50, then ~40 again and again ~50*
 *The peaks present both in normal in tumor. It could be that there is a germline CNV event (peak). The other drops probably is just that the coverage is never homogeneous. The drop at 120mb probably is technical, i.e. a region that is difficult to map. The big peak we don't know whether is technical or germline CNV. To see whether is technical or not, compare with another sample of the study. If we find the peak--> it is technical. If it is not present--> We would conclude that is a germline CNV.* 
+
+*Does it agree with the results of Sequenza?*
+*He thinks is in agreement. We have the drop, then more coverage...*
 
 **What IGV profiles are telling us ?** [solution](solutions/__visu1.md)
 
@@ -338,6 +341,8 @@ If we look at the tumor profiles we can see :
   2 - the 2 copies state correspond to a mean coverage of 50x 
   3 - the 1 copy state correspond to a mean coverage of 40x. 
 
+*How it is possible? Cellularity!!! Only 50% of cellularity, half of reads are from normal cells. Explained in the solution.*
+
 **How could you explain these values ?** [solution](solutions/__visu4.md)
 
 
@@ -345,7 +350,8 @@ If we look at the tumor profiles we can see :
 
 Let’s compare the small genomic block we ran with the entire genome which will be processed through the SNParray technology.
 
-
+*Note: We do the same analysis now using the snp array data and whole genome!*
+*Doing SNP arrays is cheap (10-15 samples) and it gives information about the data. If we think there is contamination looking at NGS level, we could look at the SNP array and if we have also contamination, then it is comming from the sample not preparation. Which is the source of the error. It is on the sample or in the library preparation? So they use for QC purpose. In cancer, it is also very useful to confirm results you find in NGS, that are not very clear.*
 
 ----------------------------------
 
@@ -369,12 +375,17 @@ Many software are avaiable for doing CNV call from SNParray. Here is a non-exhau
 #### Freely available general software
   1. [PennCNV](http://www.openbioinformatics.org/penncnv/)
   2. [QuantiSNP](https://sites.google.com/site/quantisnp/)
+
+*Note: the previous one are for germline. For arrays ASCAT is really the standard*
+
 #### Freely available cancer oriented software
   1. [**Allele-Specific Copy number Analysis of Tumors (ASCAT)**](http://heim.ifi.uio.no/bioinf/Projects/ASCAT/)
   2. [OncoSNP](https://sites.google.com/site/oncosnp/)
 
 
 **What are the major cancer factors that could biais a CNV analysis  ?** [solution](solutions/__challenges.md)
+
+*Purity, clonality and ploidy.
 
 **What are the steps to proceed this analysis ?** [solution](solutions/__SnpAnalysisSummary.md)
 
@@ -483,6 +494,8 @@ ascat.plotSegmentedData(ascat.seg)
 
 look at the `tumor2.ASPCF.png'. We can see after fitering out the homozygous probes the signal is very clean and confirm the presence of several CNA.
 
+![tumor2.ASPCF](img/tumor2.ASPCF.png)
+
 ### Estimation of the model paremters
 This function will use the computed segmentation model and estimate the following sample paramters: 
   1. aberrant cell fraction (cellularity)
@@ -517,6 +530,10 @@ write.table(
 
 Look at the 'sample.Param_estimate.tsv' text files.  
 
+```
+Sample	Aberrant_cell_fraction	Ploidy
+tumor2	0.53	2.32
+```
 
 The estimated aberrant_cell_fraction is 0.53 which means approximately 50% of the cell in the  tumor sample come from the normal.  
 
