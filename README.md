@@ -37,6 +37,7 @@ For more details about [CageKid](http://www.cng.fr/cagekid/)
 
 To ensure reasonable analysis times, we will perform the analysis on a heavily subset pair of BAM files. These files contain just 60Mb of chromosome 2 
 
+*The data is subset otherwise it is too long*
 
 # Prepare the Environment
 We will use a dataset derived from whole genome sequencing of a clear-cell renal carcinoma patient (Kidney cancer)
@@ -93,11 +94,18 @@ The seqz file could be generated from a pileUp file (as shown in SNV session) or
 
 **Should we start from the mpileUp of the SNV session ?** [solution](solutions/__pileUp.md)
 
+*We need start with a seqz file is faster.*
+*We would start with the pileup file in a real scenario. If it is generated with samtools or GTAK in principle it should be compatible.*
+
 ### transforming bam files in seqz file
+
+
 As we haven’t already generated the pileup files, and we are not interested in storing the pileup for further use, we can use the function
 `bam2seqz` which converting on the fly to pileup using samtools without storing the pileup file.
 
 **What the impact of converting data on the fly ?** [solution](solutions/__seqz1.md)
+
+*Note: This take a lot of time. 20 minutes aprox. That is way we just copy it.*
 
 ```{.bash}
 ## sequenza preprocessing step 1 - bam 2 seqz format
@@ -116,7 +124,23 @@ mkdir -p sequenza
 
 cp saved_results/sequenza/C0053.seqz.gz sequenza/
 
+
 ```
+
+```
+zcat sequenza/C0053.seqz.gz | less
+chromosome      position        base.ref        depth.normal    depth.tumor     depth.ratio     Af      Bf      zygosity.normal GC.percent      good.reads      AB.normal       AB.tumor        tumor.strand
+2       105999917       C       13      8       0.615   1.0     0       hom     36.0    8       C       .       0
+2       105999918       T       13      8       0.615   1.0     0       hom     36.0    8       T       .       0
+2       105999919       A       12      10      0.833   1.0     0       hom     36.0    10      A       .       0
+2       105999920       C       12      10      0.833   1.0     0       hom     36.0    10      C       .       0
+2       105999921       A       12      11      0.917   1.0     0       hom     36.0    11      A       .       0
+
+```
+
+*Note: The file has a table with all the positions and the counts it is a massive file*
+*We bin it in 500 bp to make it shorter. Good compromise bw the resolution and speed. If you make the bin larger then you lose to much resolution.*
+*If we have to few reads. Single cell rna-seq to normalize we use larger bins. If you take for instance 1/2 Mb your resolution is to big. You can only detect CNV that are very long. Not the small one.*
 
 To reduce the size of the seqz file, we'll use of a binning function provided in sequenza-utils.py. This binning decreases the memory requirement to load the data into R, and it also speeds up the processing of the sample.
 
@@ -134,7 +158,18 @@ We can look at the first few lines of the output in the file `sequenza/C0053.seq
 ```{.bash}
 zless -S sequenza/C0053.seqz.gz
 
+chromosome      position        base.ref        depth.normal    depth.tumor     depth.ratio     Af      Bf      zygosity.normal GC.percent      good.reads      AB.normal       AB.tumor        tumor.strand
+2       105999917       N       39      44      1.111   1.0     0       hom     42      501     N       .       0
+2       106000034       C       48      52      1.083   0.981   0       hom     42      52      C       A0.019  A0.0
+2       106000047       A       44      51      1.159   0.98    0       hom     42      51      A       C0.02   C0.0
+2       106000099       A       33      32      0.97    0.969   0       hom     42      32      A       G0.031  G0.0
+2       106000144       A       29      25      0.862   0.96    0       hom     42      25      A       G0.04   G0.0
+2       106000268       C       40      65      1.625   0.677   0.323   het     42      65      CT      .       0
+2       106000281       A       44      57      1.295   0.982   0       hom     42      57      A       G0.018  G1.0
 ```
+
+*Same information as before but in larger bin*
+
 This output has one line for each position in the BAMs and includes information on the position, depths, allele frequencies, zygosity, GC in the location.
 
 Note that since many projects might already have been processed with VarScan2, it can be convenient to be able to import such results. For this purpose a simple function is provided within the R package, to convert the output of the somatic and copynumber programs of the VarScan2 suite into the seqz format.
@@ -166,6 +201,8 @@ The seqz file can be read all at once, but processing one chromosome at a time i
 
 **Why could we process each chromosome individulally ?** [solution](solutions/__seqz2.md)
 
+*We speed up the process, and as CNV are not continuous bw chromosomes it does not have any impact on the analysis*
+
 The function `sequenza.extract` is designed to efficiently access the seqz file and take care of normalization steps. The arguments enable customization of a set of actions listed below:  
 
  - binning depth ratio and B allele frequency in a desired window size (allowing a desired number of overlapping windows);
@@ -176,7 +213,16 @@ The function `sequenza.extract` is designed to efficiently access the seqz file 
 data.file = "sequenza/C0053.seqz.bin500.gz"
 seqzdata = sequenza.extract(data.file)
 
+Collecting GC information .. done
+
+Processing 2:
+   198 variant calls.
+   23 copy-number segments.
+   42704 heterozygous positions.
+   813393 homozygous positions.
 ```
+
+*It does not only tell you that it has increase or decrease of copies but also which alleles are amplified. You can have 2 copies but LOH. You loss one copy and the other was amplified.*
 
 After the raw data is processed, the size of the data is considerably reduced. Typically, the R object resulting from `sequenza.extract` can be stored as a file of a few megabytes, even for whole genome sequencing data.
 
@@ -186,7 +232,10 @@ After the raw data is processed, imported into R, and normalized, we can apply t
 ```{.R}
 CP.example = sequenza.fit(seqzdata)
 
+|++++++++++++++++++++++++++++++++++++++++++++++++++| 100% elapsed = 01m 08s
 ```
+
+*It takes less than 2 minutes.*
 
 ###  Results of model fitting
 The last part of the workflow is to apply the estimated parameters. There is an all-in-one function that plots and saves the results, giving control on file names and output directory
@@ -205,6 +254,7 @@ We can now quit R and explore the generated results
 ```{.R}
 q("yes")
 
+# results in /home/training/ebicancerworkshop2019/CNV/NGS/sequenza/results
 ```
 
 ## Quit the docker environment
@@ -218,6 +268,7 @@ exit
 One of the first and most important estimates that Sequenza provides is the tumour cellularity (the estimated percentage of tumour cells in the tumour genome). This estimate is based on the B allele frequency and depth ratio through the genome and is an important metric to know for interpretation of Sequenza results and for other analyses.
 
 
+
 Lets look at the cellularity estimate for our analysis by opening model fit.pdf with the command:
 
 ```{.bash}
@@ -225,9 +276,12 @@ evince CNV/NGS/sequenza/results/C0053_model_fit.pdf &
 
 ```
 
+[model_fit](img/C0053_model_fit.pdf)
+
+
 **What is the graph telling us ?** [solution](solutions/__results1.md)
 
-
+*2.3 ploidy Maybe we have 3 copies and a lot of deletions. Or we have 2 copies and 30% of the genome amplified.*
 
 
 Let’s now look at the CNV inferences through our genomic block. Open the  genome copy number visualisation file with:
@@ -236,6 +290,12 @@ Let’s now look at the CNV inferences through our genomic block. Open the  geno
 evince CNV/NGS/sequenza/results/C0053_genome_view.pdf &
 
 ```
+[genome](img/C0053_genome_view.pdf) 
+
+*page2 In the region we have 3 copies and then a loss or 2 copies and again, still unknown*
+*page1: We are triploid, the red allele (red) seems to be in two copies all along the region, the second allele is present at the beginning and then a deletion. We would say that is triploid and there is a deletion. But of course we can interpret it otherwise.
+page3: *
+
 This file contains three “pages” of copy number events through the entire genomic block. The first page shows copy numbers of the A (red) and B (blue) alleles, the second page shows overall copy number changes and the third page shows the B allele frequency and depth ratio through genomic block.
 
 **What are these graphs telling us ?** [solution](solutions/__results2.md)
@@ -244,9 +304,10 @@ This file contains three “pages” of copy number events through the entire ge
 We can see how this is a very easy to read output and it lets us immediately see the frequency and severity of copy number events through the genome.
 
 
-
 ## CNV Visualisation/Confirmation in IGV
 Let’s see if we can visualise the CNV events. We will now open IGV and see if we can observe the predicted increase in copy number alterations within our genomic region.
+
+*It is always nice to look at the data, sometimes you see stuff that otherwise is hide.*
 
 ```{.bash}
 igv &
@@ -258,6 +319,12 @@ IGV will take 30 seconds or so to open so just be patient.
 For a events of this size (several Mb), we should not be able to easily observe it just by looking at the raw read alignments. In order to see coverage at large scale I rpre-generate the tdf file of each bam files. This means that we can aggregate the average read depth over relatively large chunks of the genome and compare these values between the normal and tumour genomes.
 
 Once IGV is open just load the normal et tumor bam files and zoom on the region `2:100000000-170000000`
+
+[region zoom](img/igv1.png)
+
+*If you click on top of the track you see the mean coverage of the region.*
+*The coverage is quite flat ~50X. Only we have some local peak and agujeros. In the tumor all the first strecth is flat. Then we have a drop down to ~40, back to ~50, then ~40 again and again ~50*
+*The peaks present both in normal in tumor. It could be that there is a germline CNV event (peak). The other drops probably is just that the coverage is never homogeneous. The drop at 120mb probably is technical, i.e. a region that is difficult to map. The big peak we don't know whether is technical or germline CNV. To see whether is technical or not, compare with another sample of the study. If we find the peak--> it is technical. If it is not present--> We would conclude that is a germline CNV.* 
 
 **What IGV profiles are telling us ?** [solution](solutions/__visu1.md)
 
