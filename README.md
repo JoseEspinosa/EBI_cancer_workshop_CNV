@@ -605,14 +605,21 @@ tumor2	0.53	2.32
 
 ![tumor2.sunrise](img/tumor2.sunrise.png)
 
-*Note: *
+*Note: The ploidy is higher than in our solution, because it is not totally confident of the results 88.3 goodness of fit in the profile plot below.*
+
 ![tumor2.ASCATprofile](img/tumor2.ASCATprofile.png)
+
+*Note: You can not know whether is maternal or paternal. Just by chromosome it tells you which is the major or the minor. Actually, although very unlikely, it could be that before the centromer it is one the chromosome that is duplicated and after the other.
+You can do phasing in the germline with externals tools, if you are really interested on it and integrate the results with ASCAT resuts.*
 
 **What are these results telling us ?** [solution](solutions/__ascat1.md)
 
 The ASCAT analysis have been done on the same sample than the sequenza analysis
 
 **Are the two analyses concordent ?** [solution](solutions/__ascat2.md)
+
+*The estimation was very similar bw the methods. The copy number in chromosome 2, 3 copies + a lost + 3 copies  + 2 copies was the same in both cases.*
+*What was wrong was our interpretation of 3n with lot of depletion with sequenza because we were looking just to a chromosome and not the whole genome.*
 
 -------------------------------------
 
